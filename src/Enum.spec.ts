@@ -180,4 +180,21 @@ describe(Enum, () => {
       } catch {}
     })
   })
+
+  describe('.match() with default', () => {
+    test('with default', () => {
+      const matchOn = (shape: Shape) => shape.match({
+        Point: () => 1,
+        default: () => 2,
+      })
+      expect(matchOn(Shape.Point())).toEqual(1)
+      expect(matchOn(Shape.Circle(0))).toEqual(2)
+      expect(matchOn(Shape.Rect({width: 1, height: 2}))).toEqual(2)
+    })
+
+    test('cannot create an enum with variant named `default`', () => {
+      // @ts-expect-error
+      Enum<{default: void}>('default')
+    })
+  })
 })

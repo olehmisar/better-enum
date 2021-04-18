@@ -1,8 +1,14 @@
 import {UnionToTuple} from './utils'
 
-type AllowedVariantTypes = object | any[] | void
+type ForbiddenVariantNames = 'default'
+type VariantTypesConstraint = object | any[] | void
+type TMapConstraint<TMap> = {
+  [TTag in keyof TMap]: TTag extends ForbiddenVariantNames
+    ? never
+    : VariantTypesConstraint
+}
 
-export function Enum<TMap extends Record<string, AllowedVariantTypes>>(...tags: UnionToTuple<keyof TMap>) {
+export function Enum<TMap extends TMapConstraint<TMap>>(...tags: UnionToTuple<keyof TMap>) {
   type Variants = {
     [TTag in keyof TMap]: TMap[TTag] extends any[]
       ? TMap[TTag]
@@ -24,10 +30,17 @@ type EnumConstructor<TMap extends Record<string, any[]>, TTag extends keyof TMap
 
 type MatchArms<TMap extends Record<string, any[]>, TRet> = { [TTag in keyof TMap]: (...value: TMap[TTag]) => TRet }
 
+type DefaultArm<TRet> = {default: () => TRet}
+type PartialMatchArms<TMap extends Record<string, any[]>, TRet> = Partial<MatchArms<TMap, TRet>> & DefaultArm<TRet>
+
 class EnumField<TMap extends Record<string, any[]>> {
   constructor(private tag: keyof TMap, private value: TMap[keyof TMap]) {}
 
-  match<TRet>(map: MatchArms<TMap, TRet>) {
-    return map[this.tag](...this.value)
+  match<TRet>(map: MatchArms<TMap, TRet> | PartialMatchArms<TMap, TRet>) {
+    const f = map[this.tag]
+    if (!f) {
+      return map.default()
+    }
+    return f(...this.value)
   }
 }
