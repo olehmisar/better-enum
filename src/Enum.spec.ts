@@ -11,11 +11,19 @@ const Shape = Enum<{
 }>('Point', 'Circle', 'Rect')
 
 describe(Enum, () => {
-  test('enum creation', () => {
+  test('invalid enum declaration', () => {
+    // @ts-expect-error
+    Enum<{num: number}>('num')
+    // @ts-expect-error
+    Enum<{str: string}>('str')
+    // @ts-expect-error
+    Enum<{bool: boolean}>('bool')
+  })
 
-    expect(Shape.Point()).toEqual({tag: 'Point', value: undefined})
-    expect(Shape.Circle([2])).toEqual({tag: 'Circle', value: [2]})
-    expect(Shape.Rect({width: 1, height: 2})).toEqual({tag: 'Rect', value: {width: 1, height: 2}})
+  test('enum creation', () => {
+    expect(Shape.Point()).toEqual({tag: 'Point', value: []})
+    expect(Shape.Circle(2)).toEqual({tag: 'Circle', value: [2]})
+    expect(Shape.Rect({width: 1, height: 2})).toEqual({tag: 'Rect', value: [{width: 1, height: 2}]})
 
     // @ts-expect-error
     Shape.Unexisting
@@ -30,13 +38,17 @@ describe(Enum, () => {
     // @ts-expect-error
     Shape.Point({width: 1, height: 2})
 
-    Shape.Circle([1])
-    // @ts-expect-error
-    Shape.Circle(['hello'])
+    Shape.Circle(1)
     // @ts-expect-error
     Shape.Circle()
     // @ts-expect-error
+    Shape.Circle(1, 2)
+    // @ts-expect-error
     Shape.Circle([])
+    // @ts-expect-error
+    Shape.Circle([1])
+    // @ts-expect-error
+    Shape.Circle(['hello'])
     // @ts-expect-error
     Shape.Circle({})
     // @ts-expect-error
@@ -53,18 +65,20 @@ describe(Enum, () => {
     Shape.Rect({width: 1})
     // @ts-expect-error
     Shape.Rect({height: 2})
+    // @ts-expect-error
+    Shape.Rect({width: 1, height: 2}, {width: 3, height: 4})
   })
 
   test('reassigning', () => {
     let shape = Shape.Point()
-    shape = Shape.Circle([2])
+    shape = Shape.Circle(2)
     shape = Shape.Rect({width: 1, height: 2})
   })
 
   test('getting the type', () => {
     const f = (shape: Shape) => {}
     f(Shape.Point())
-    f(Shape.Circle([1]))
+    f(Shape.Circle(1))
     f(Shape.Rect({width: 1, height: 2}))
     // @ts-expect-error
     f(1)
@@ -80,7 +94,7 @@ describe(Enum, () => {
     test('return value', () => {
       const shapes = [
         [1, Shape.Point()],
-        [2, Shape.Circle([1])],
+        [2, Shape.Circle(1)],
         [3, Shape.Rect({width: 1, height: 2})],
       ] as const
       shapes.forEach(([ret, shape]) => {
@@ -147,11 +161,11 @@ describe(Enum, () => {
     test('variants destructuring', () => {
       const matchOn = (shape: Shape) => shape.match({
         Point: () => 0,
-        Circle: ([radius]) => radius,
+        Circle: (radius) => radius,
         Rect: ({width, height}) => width + height,
       })
       expect(matchOn(Shape.Point())).toEqual(0)
-      expect(matchOn(Shape.Circle([2]))).toEqual(2)
+      expect(matchOn(Shape.Circle(2))).toEqual(2)
       expect(matchOn(Shape.Rect({width: 3, height: 4}))).toEqual(7)
 
       try {
@@ -161,14 +175,7 @@ describe(Enum, () => {
           // @ts-expect-error
           Circle: ({height: _}) => {},
           // @ts-expect-error
-          Rect: ([]) => {},
-        })
-
-        // TODO: Circle should not destructure to an empty object
-        Shape.Point().match({
-          Point: () => {},
-          Circle: ({}) => {},
-          Rect: () => {},
+          Rect: ([radius]) => {},
         })
       } catch {}
     })
