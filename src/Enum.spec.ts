@@ -192,6 +192,39 @@ describe(Enum, () => {
       expect(matchOn(Shape.Rect({width: 1, height: 2}))).toEqual(2)
     })
 
+    test('default should receive enum with the rest of variants', () => {
+      expect(Shape.Rect({width: 1, height: 2}).match({
+        Point: () => 1,
+        default: shape => shape.match({
+          Point: () => 1,
+          Circle: () => 2,
+          Rect: ({width, height}) => width + height,
+        }),
+      })).toEqual(3)
+
+      // TODO: FIXME
+      // Shape.Rect({width: 1, height: 2}).match({
+      //   Point: () => 1,
+      //   default: shape => shape.match({
+      //     // @ts-expect-error
+      //     Point: () => 1,
+      //     Circle: () => 2,
+      //     Rect: () => 3,
+      //   }),
+      // })
+    })
+
+    // TODO: FIXME
+    // test('default should not be accessible if all arms are provided', () => {
+    //   Shape.Point().match({
+    //     Point: () => {},
+    //     Circle: () => {},
+    //     Rect: () => {},
+    //     // @ts-expect-error
+    //     default: () => {},
+    //   })
+    // })
+
     test('cannot create an enum with variant named `default`', () => {
       // @ts-expect-error
       Enum<{default: void}>('default')

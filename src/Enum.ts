@@ -30,8 +30,10 @@ type EnumConstructor<TMap extends Record<string, any[]>, TTag extends keyof TMap
 
 type MatchArms<TMap extends Record<string, any[]>, TRet> = { [TTag in keyof TMap]: (...value: TMap[TTag]) => TRet }
 
-type DefaultArm<TRet> = {default: () => TRet}
-type PartialMatchArms<TMap extends Record<string, any[]>, TRet> = Partial<MatchArms<TMap, TRet>> & DefaultArm<TRet>
+type DefaultArm<TMap extends Record<string, any[]>, TRet> = {default: (x: EnumField<TMap>) => TRet}
+type PartialMatchArms<TMap extends Record<string, any[]>, TRet> =
+  Partial<MatchArms<TMap, TRet>>
+  & DefaultArm<TMap, TRet>
 
 class EnumField<TMap extends Record<string, any[]>> {
   constructor(private tag: keyof TMap, private value: TMap[keyof TMap]) {}
@@ -39,7 +41,7 @@ class EnumField<TMap extends Record<string, any[]>> {
   match<TRet>(map: MatchArms<TMap, TRet> | PartialMatchArms<TMap, TRet>) {
     const f = map[this.tag]
     if (!f) {
-      return map.default()
+      return map.default(this)
     }
     return f(...this.value)
   }
